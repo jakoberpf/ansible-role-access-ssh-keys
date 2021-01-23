@@ -1,4 +1,4 @@
-SSH
+ACCESS - ssh
 =========
 
 Configure SSH and exchange public and host keys.

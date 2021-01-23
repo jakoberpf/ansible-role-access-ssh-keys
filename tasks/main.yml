@@ -17,7 +17,7 @@
   command: 'ssh-keygen -t {{ ssh_keygen_algorithm }} -b {{ ssh_keygen_bits }} -N "{{ ssh_keygen_password }}" -f /home/{{ ssh_user }}/.ssh/id_{{ ssh_keygen_algorithm }}'
   when: ssh_key_stat.stat.exists == False
 
-- name: Copy local public key to authorized_keys
+- name: Copy public keys to authorized_keys
   become: yes
   authorized_key:
     user: '{{ ssh_user }}'
@@ -25,6 +25,44 @@
     key: '{{ item }}'
   with_items:
     - '{{ ssh_keys }}'
+
+##################################################
+######## START - Internode Communitcation ########
+##################################################
+
+- name: Slurp public keys from all nodes
+  slurp:
+    src: '/home/{{ ansible_user }}/.ssh/id_{{ ssh_keygen_algorithm }}.pub'
+  register: ssh_key_slurp
+  when: ssh_enable_internode_ssh == True
+
+- name: Copy public keys of all nodes into authorized_keys
+  authorized_key:
+    user: '{{ ansible_user }}'
+    state: present
+    key: '{{ hostvars[item].ssh_key_slurp.content | b64decode }}'
+  with_items: '{{ ansible_play_hosts }}'
+  when: ssh_enable_internode_ssh == True
+
+- name: Slurp host keys from all nodes
+  slurp:
+    src: '/etc/ssh/ssh_host_{{ ssh_host_key_algorithm }}_key.pub'
+  register: ssh_host_key_slurp
+  when: ssh_enable_internode_ssh == True
+
+- name: Insert all nodes into global known_hosts
+  become: yes
+  known_hosts:
+    name: '{{ item }}'
+    key: '{{ item }} {{ hostvars[item].ssh_host_key_slurp.content | b64decode }}'
+    path: '/etc/ssh/ssh_known_hosts'
+    hash_host: '{{ ssh_hash_known_hosts }}'
+    state: present
+  with_items: '{{ ansible_play_hosts }}'
+
+################################################
+######## END - Internode Communitcation ########
+################################################
 
 - name: Secure SSH configuration
   become: yes
