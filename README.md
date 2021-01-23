@@ -28,12 +28,11 @@ Example Playbook
 ```yaml
 - hosts: all
   roles:
-  - ssh
+  - access_ssh_keys
 ```
 
 License
 -------
-
 BSD
 
 Author Information
