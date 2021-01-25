@@ -27,18 +27,37 @@
     - '{{ ssh_keys }}'
 
 ##################################################
+######## START - Root User Communitcation ########
+##################################################
+
+- name: Copy public keys to authorized_keys
+  become: yes
+  authorized_key:
+    user: '{{ ssh_user }}'
+    state: present
+    key: '{{ item }}'
+    path: /root/.ssh/authorized_keys
+  with_items:
+    - '{{ ssh_keys }}'
+  when: ssh_user == 'root'
+
+################################################
+######## END - Root User Communitcation ########
+################################################
+
+##################################################
 ######## START - Internode Communitcation ########
 ##################################################
 
 - name: Slurp public keys from all nodes
   slurp:
-    src: '/home/{{ ansible_user }}/.ssh/id_{{ ssh_keygen_algorithm }}.pub'
+    src: '/home/{{ ssh_user }}/.ssh/id_{{ ssh_keygen_algorithm }}.pub'
   register: ssh_key_slurp
   when: ssh_enable_internode_ssh == True
 
 - name: Copy public keys of all nodes into authorized_keys
   authorized_key:
-    user: '{{ ansible_user }}'
+    user: '{{ ssh_user }}'
     state: present
     key: '{{ hostvars[item].ssh_key_slurp.content | b64decode }}'
   with_items: '{{ ansible_play_hosts }}'

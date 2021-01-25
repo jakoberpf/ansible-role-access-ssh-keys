@@ -20,6 +20,8 @@ ssh_config_path: /etc/ssh/ssh_config
 ssh_hash_known_hosts: "no"
 ssh_host_key_algorithm: 'rsa'
 
+ssh_user: '{{ ansible_user }}'
 ssh_keys: 
   - '~/.ssh/id_rsa.pub'
+  
 ssh_enable_internode_ssh: False
